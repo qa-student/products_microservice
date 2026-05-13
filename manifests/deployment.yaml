@@ -152,12 +152,8 @@ kind: Ingress
 metadata:
   name: products-api-ingress
   namespace: products-microservice
-
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
-
-spec:
-  ingressClassName: nginx
+    kubernetes.io/ingress.class: "gce"
 
   rules:
     - host: products.example.com
