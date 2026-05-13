@@ -1,0 +1,222 @@
+# ---------------------------------------------------------
+# Namespace
+# ---------------------------------------------------------
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: products-microservice
+
+---
+
+# ---------------------------------------------------------
+# Deployment
+# ---------------------------------------------------------
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: products-api
+  namespace: products-microservice
+  labels:
+    app: products-api
+spec:
+  replicas: 3
+
+  revisionHistoryLimit: 5
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+
+  selector:
+    matchLabels:
+      app: products-api
+
+  template:
+    metadata:
+      labels:
+        app: products-api
+
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/metrics"
+        prometheus.io/port: "8000"
+
+    spec:
+      terminationGracePeriodSeconds: 30
+
+      containers:
+        - name: products-api
+          image: {{.Values.image}}
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - containerPort: 8000
+              name: http
+
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+
+          env:
+            - name: ENVIRONMENT
+              value: "production"
+
+          # -------------------------------------------------
+          # Liveness Probe
+          # -------------------------------------------------
+
+          livenessProbe:
+            httpGet:
+              path: /live
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            timeoutSeconds: 2
+            failureThreshold: 3
+
+          # -------------------------------------------------
+          # Readiness Probe
+          # -------------------------------------------------
+
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+
+          # -------------------------------------------------
+          # Startup Probe
+          # -------------------------------------------------
+
+          startupProbe:
+            httpGet:
+              path: /ready
+              port: 8000
+            failureThreshold: 30
+            periodSeconds: 5
+
+          # -------------------------------------------------
+          # Graceful Shutdown
+          # -------------------------------------------------
+
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "sleep 10"]
+
+---
+
+# ---------------------------------------------------------
+# ClusterIP Service
+# ---------------------------------------------------------
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: products-api-service
+  namespace: products-microservice
+  labels:
+    app: products-api
+spec:
+  type: ClusterIP
+
+  selector:
+    app: products-api
+
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8000
+      protocol: TCP
+
+---
+
+# ---------------------------------------------------------
+# Ingress
+# ---------------------------------------------------------
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: products-api-ingress
+  namespace: products-microservice
+
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+
+spec:
+  ingressClassName: nginx
+
+  rules:
+    - host: products.example.com
+
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+
+            backend:
+              service:
+                name: products-api-service
+                port:
+                  number: 80
+
+---
+
+# ---------------------------------------------------------
+# Horizontal Pod Autoscaler
+# ---------------------------------------------------------
+
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: products-api-hpa
+  namespace: products-microservice
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: products-api
+
+  minReplicas: 3
+  maxReplicas: 10
+
+  metrics:
+    - type: Resource
+
+      resource:
+        name: cpu
+
+        target:
+          type: Utilization
+          averageUtilization: 70
+
+---
+
+# ---------------------------------------------------------
+# Pod Disruption Budget
+# ---------------------------------------------------------
+
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: products-api-pdb
+  namespace: products-microservice
+spec:
+  minAvailable: 2
+
+  selector:
+    matchLabels:
+      app: products-api
