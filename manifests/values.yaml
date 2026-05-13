@@ -1,1 +1,1 @@
-image: qastudent/fastapi-products-service:<+pipeline.sequenceId>
+image: qastudent/products_microservice:<+pipeline.sequenceId>
