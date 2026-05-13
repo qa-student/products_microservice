@@ -144,7 +144,7 @@ spec:
 ---
 
 # ---------------------------------------------------------
-# Ingress
+# Ingress (GCE / GKE Native Ingress)
 # ---------------------------------------------------------
 
 apiVersion: networking.k8s.io/v1
@@ -152,23 +152,24 @@ kind: Ingress
 metadata:
   name: products-api-ingress
   namespace: products-microservice
+
   annotations:
     kubernetes.io/ingress.class: "gce"
 
+spec:
   rules:
     - host: products.example.com
 
       http:
         paths:
-          - path: /
-            pathType: Prefix
+          - path: /*
+            pathType: ImplementationSpecific
 
             backend:
               service:
                 name: products-api-service
                 port:
                   number: 80
-
 ---
 
 # ---------------------------------------------------------
