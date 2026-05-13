@@ -208,7 +208,7 @@ spec:
     kind: Deployment
     name: products-api
 
-  minReplicas: 3
+  minReplicas: 2
   maxReplicas: 10
 
   metrics:

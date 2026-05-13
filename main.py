@@ -3,14 +3,12 @@ from fastapi.responses import JSONResponse
 from prometheus_fastapi_instrumentator import Instrumentator
 from prometheus_client import Counter
 import uvicorn
-from pydantic import BaseModel
-from typing import Optional
 from product import Product
 
 
 app = FastAPI(
     title="Products Microservice",
-    version="1.0.0",
+    version="1.0.1",
     description="Sample FastAPI microservice with Prometheus metrics"
 )
 
@@ -51,6 +49,12 @@ PRODUCTS = [
         "name": "Running Shoes",
         "price": 120.00,
         "category": "Sports"
+    },
+    {
+        "id": 5,
+        "name": "Spinning Widgets",
+        "price": 180.00,
+        "category": "Toys"
     }
 ]
 
@@ -72,7 +76,7 @@ async def health():
     return {
         "status": "healthy",
         "service": "products-microservice",
-        "version": "1.0.0"
+        "version": "1.0.1"
     }
 
 # -------------------------------------------------------------------
