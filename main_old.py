@@ -3,7 +3,9 @@ from fastapi.responses import JSONResponse
 from prometheus_fastapi_instrumentator import Instrumentator
 import uvicorn
 from product import Product
-from prometheus_client import Gauge, REGISTRY
+from typing import Callable
+from prometheus_fastapi_instrumentator.metrics import Info
+from prometheus_client import Counter, Gauge, REGISTRY
 
 app = FastAPI(
     title="Products Microservice",
@@ -62,12 +64,58 @@ else:
 # Set initial value immediately
 TOTAL_PRODUCTS_GAUGE.set(len(PRODUCTS))
 
+# LANGUAGE_METRIC = Counter(
+#     "demo_http_requested_languages_total",
+#     "Number of times a certain language has been requested.",
+#     ["langs"]
+# )
+if "demo_http_requested_languages_total" in REGISTRY._names_to_collectors:
+    LANGUAGE_METRIC = REGISTRY._names_to_collectors["demo_http_requested_languages_total"]
+else:
+    LANGUAGE_METRIC = Counter(
+        "demo_http_requested_languages_total",
+        "Number of times a certain language has been requested.",
+        ["langs"]
+    )
+
+
+# -------------------------------------------------------------------
+# Custom Instrumentation
+# -------------------------------------------------------------------
+
+def demo_http_requested_languages_total() -> Callable[[Info], None]:
+
+    def instrumentation(info: Info) -> None:
+
+        lang_header = info.request.headers.get("Accept-Language")
+
+        if not lang_header:
+            return
+
+        langs = set()
+
+        for element in lang_header.split(","):
+            lang = element.split(";")[0].strip().lower()
+
+            if lang:
+                langs.add(lang)
+
+        for language in langs:
+            LANGUAGE_METRIC.labels(
+                langs=language
+            ).inc()
+
+    return instrumentation
 
 # -------------------------------------------------------------------
 # Instrumentator
 # -------------------------------------------------------------------
 
 instrumentator = Instrumentator()
+
+# instrumentator.add(
+#     demo_http_requested_languages_total()
+# )
 
 instrumentator.instrument(app).expose(app)
 
@@ -80,7 +128,7 @@ async def health():
     return {
         "status": "healthy",
         "service": "products-microservice",
-        "version": "1.0.2"
+        "version": "1.0.1"
     }
 
 # -------------------------------------------------------------------
