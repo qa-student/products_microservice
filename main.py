@@ -4,13 +4,25 @@ from prometheus_fastapi_instrumentator import Instrumentator
 import uvicorn
 from product import Product
 from prometheus_client import Gauge, REGISTRY
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(
     title="Products Microservice",
-    version="1.0.2",
+    version="1.0.3",
     description="Sample FastAPI microservice with Prometheus metrics"
 )
-
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",   # React dev server
+        "http://127.0.0.1:3000",
+        "https://your-frontend-domain.com",
+        "*"
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 # -------------------------------------------------------------------
 # Sample Product Data
 # -------------------------------------------------------------------
@@ -80,7 +92,7 @@ async def health():
     return {
         "status": "healthy",
         "service": "products-microservice",
-        "version": "1.0.2"
+        "version": "1.0.3"
     }
 
 # -------------------------------------------------------------------
