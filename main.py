@@ -5,10 +5,11 @@ import uvicorn
 from product import Product
 from prometheus_client import Gauge, REGISTRY
 from fastapi.middleware.cors import CORSMiddleware
+from product_data import PRODUCTS
 
 app = FastAPI(
     title="Products Microservice",
-    version="1.0.3",
+    version="1.0.4",
     description="Sample FastAPI microservice with Prometheus metrics"
 )
 app.add_middleware(
@@ -23,42 +24,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-# -------------------------------------------------------------------
-# Sample Product Data
-# -------------------------------------------------------------------
-
-PRODUCTS = [
-    {
-        "id": 1,
-        "name": "Wireless Mouse",
-        "price": 24.99,
-        "category": "Electronics"
-    },
-    {
-        "id": 2,
-        "name": "Mechanical Keyboard",
-        "price": 89.99,
-        "category": "Electronics"
-    },
-    {
-        "id": 3,
-        "name": "Water Bottle",
-        "price": 14.50,
-        "category": "Home"
-    },
-    {
-        "id": 4,
-        "name": "Running Shoes",
-        "price": 120.00,
-        "category": "Sports"
-    },
-    {
-        "id": 5,
-        "name": "Spinning Widgets",
-        "price": 180.00,
-        "category": "Toys"
-    }
-]
 
 # ---------------------------------------------------
 # Custom Metric
@@ -92,7 +57,7 @@ async def health():
     return {
         "status": "healthy",
         "service": "products-microservice",
-        "version": "1.0.3"
+        "version": "1.0.4"
     }
 
 # -------------------------------------------------------------------
